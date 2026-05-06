@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nightcore Audio Visualizer Studio</title>
+  <link rel="icon" type="image/png" href="./favicon.png">
   <style>
     :root {
       --accent: #70dfff;
@@ -297,6 +298,55 @@
       }
       button { width: 100%; }
     }
+    .nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 44px;
+
+  padding: 12px 18px;
+
+  border-radius: 999px;
+
+  text-decoration: none;
+
+  font-weight: 700;
+
+  color: rgba(245,250,255,0.92);
+
+  background: rgba(255,255,255,0.08);
+
+  border: 1px solid rgba(255,255,255,0.14);
+
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.nav-top {
+  position: fixed;
+
+  top: 24px;
+  right: 24px;
+
+  z-index: 999;
+
+  backdrop-filter: blur(12px);
+
+  background: rgba(0,0,0,0.28);
+
+  box-shadow:
+    0 0 24px rgba(112,223,255,0.22);
+}
+.nav-btn:hover {
+  transform: translateY(-1px);
+
+  background: rgba(255,255,255,0.12);
+
+  box-shadow:
+    0 0 24px rgba(112,223,255,0.22);
+}
   </style>
 </head>
 <body class="theme-blue">
@@ -305,6 +355,9 @@
   <div class="bg-orb" id="orb"></div>
 
   <main class="app">
+    <a class="nav-btn" href="./how-to-use.html">
+      How to Use
+    </a>
     <section class="title" id="titleBlock">
       <h1 id="mainTitle">Nightcore Visualizer</h1>
       <p id="subtitle">Linear glow audio bars / browser only / free</p>
@@ -324,6 +377,8 @@
       <button class="ghost-btn" id="exportBtn" disabled>Manual Export</button>
       <button class="ghost-btn" id="autoExportBtn" disabled>Auto Export</button>
       <button class="ghost-btn" id="autoTransparentBtn" disabled>Auto Transparent</button>
+  
+
     </section>
 
     <section class="studio-panel">
