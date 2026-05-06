@@ -94,19 +94,12 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-
       min-height: 50px;
-
       padding: 14px 24px;
-
       border-radius: 999px;
-
       text-decoration: none;
-
       font-weight: 800;
-
       color: #04111c;
-
       background:
         linear-gradient(
           135deg,
@@ -114,10 +107,8 @@
           #70dfff 45%,
           #7b8cff
         );
-
       box-shadow:
         0 0 28px rgba(112,223,255,0.28);
-
       transition:
         transform 0.15s ease,
         box-shadow 0.15s ease;
@@ -125,7 +116,6 @@
 
     .button:hover {
       transform: translateY(-2px);
-
       box-shadow:
         0 0 38px rgba(112,223,255,0.42);
     }
@@ -142,6 +132,14 @@
       padding: 2px 8px;
       border-radius: 8px;
     }
+    .visualizer-wrap,
+.controls,
+.studio-panel,
+.hint,
+audio {
+  margin-left: auto;
+  margin-right: auto;
+}
   </style>
 </head>
 
@@ -156,7 +154,103 @@
     </p>
 
     <div class="card">
+      <h2>What is this? / これは何？</h2>
 
+      <p>
+        Nightcore Visualizer is a free browser-based anime-style audio visualizer.
+        <br><br>
+        Nightcore・AMV・VTuber・LoFi・TikTok・YouTube Shorts向けの、
+        ブラウザだけで動作する無料オーディオビジュアライザーです。
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Quick Start / クイックスタート</h2>
+
+      <div class="step">
+        <h3>1. Upload Music</h3>
+        <p>
+          Upload your audio file using the file picker.
+          <br>
+          音楽ファイルを読み込みます。
+        </p>
+      </div>
+
+      <div class="step">
+        <h3>2. Customize Visualizer</h3>
+        <p>
+          Change waveform, colors, glow, background, and sensitivity.
+          <br>
+          波形・カラー・Glow・背景・感度などを調整できます。
+        </p>
+      </div>
+
+      <div class="step">
+        <h3>3. Export Video</h3>
+        <p>
+          Press <span class="highlight">Auto Export</span> or
+          <span class="highlight">Auto Transparent</span>.
+          <br><br>
+          Auto Export：通常背景付き動画を書き出します。
+          <br>
+          Auto Transparent：背景透過WebMを書き出します。
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Transparent Export / 透過書き出し</h2>
+
+      <p>
+        Transparent Export allows you to overlay waveforms on videos in editing software such as:
+      </p>
+
+      <ul>
+        <li>CapCut</li>
+        <li>Adobe Premiere Pro</li>
+        <li>OBS Studio</li>
+        <li>After Effects</li>
+      </ul>
+
+      <br>
+
+      <p>
+        波形だけを動画上に重ねることができます。
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Recommended Browser / 推奨ブラウザ</h2>
+
+      <ul>
+        <li><span class="highlight">Google Chrome</span>（Recommended）</li>
+        <li>Safari（Some limitations）</li>
+        <li>Firefox（Limited support）</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Export Quality / 書き出し品質</h2>
+
+      <ul>
+        <li>High：60fps / 16Mbps</li>
+        <li>Medium：60fps / 8Mbps</li>
+        <li>Low：30fps / 4Mbps</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Tips / おすすめ設定</h2>
+
+      <ul>
+        <li>Bars mode is the smoothest.</li>
+        <li>Glow 8〜12 is recommended.</li>
+        <li>56 bars gives good performance.</li>
+        <li>Use Chrome for best export stability.</li>
+      </ul>
+    </div>
+
+    <div class="card">
       <h2>Back to Visualizer</h2>
 
       <a
@@ -166,7 +260,6 @@
       >
         Open Visualizer
       </a>
-
     </div>
 
     <footer>
