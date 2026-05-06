@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nightcore Audio Visualizer Studio</title>
+  <style>
+    :root {
+      --accent: #70dfff;
+      --accent-2: #7b8cff;
+      --text: rgba(240, 252, 255, 0.94);
+      --muted: rgba(225, 245, 255, 0.66);
+      --panel: rgba(255, 255, 255, 0.065);
+      --border: rgba(170, 235, 255, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: #030814;
+    }
+
+    body.theme-blue {
+      --accent: #70dfff;
+      --accent-2: #6c8cff;
+      background: radial-gradient(circle at center, #102848 0%, #07111f 45%, #02040a 100%);
+    }
+
+    body.theme-pink {
+      --accent: #ff7ad9;
+      --accent-2: #9b7cff;
+      background: radial-gradient(circle at center, #39143c 0%, #170c25 48%, #05040a 100%);
+    }
+
+    body.theme-orange {
+      --accent: #ffb35c;
+      --accent-2: #ff6d6d;
+      background: radial-gradient(circle at center, #3b210d 0%, #160d08 48%, #050302 100%);
+    }
+
+    body.theme-green {
+      --accent: #7dffc7;
+      --accent-2: #6fd8ff;
+      background: radial-gradient(circle at center, #0c2f25 0%, #071917 48%, #020807 100%);
+    }
+
+    body.theme-mono {
+      --accent: #ffffff;
+      --accent-2: #b6c2ff;
+      background: radial-gradient(circle at center, #1c1f2a 0%, #090b10 48%, #030406 100%);
+    }
+
+    .stars {
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(rgba(255,255,255,0.85) 1px, transparent 1px),
+        radial-gradient(color-mix(in srgb, var(--accent) 70%, transparent) 1px, transparent 1px);
+      background-size: 90px 90px, 140px 140px;
+      background-position: 0 0, 35px 50px;
+      opacity: 0.34;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .bg-orb {
+      position: fixed;
+      width: 560px;
+      height: 560px;
+      border-radius: 50%;
+      background: radial-gradient(circle, color-mix(in srgb, var(--accent) 28%, transparent), color-mix(in srgb, var(--accent) 4%, transparent), transparent 70%);
+      filter: blur(18px);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: breathe 5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .mesh {
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 54px 54px;
+      mask-image: radial-gradient(circle at center, black, transparent 70%);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    @keyframes breathe {
+      0%, 100% { transform: translate(-50%, -50%) scale(0.94); opacity: 0.72; }
+      50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+    }
+
+    .app {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      gap: 18px;
+    }
+
+    .title {
+      text-align: center;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 75%, transparent);
+      user-select: none;
+    }
+
+    .title h1 {
+      font-size: clamp(28px, 5vw, 64px);
+      font-weight: 850;
+      line-height: 1.05;
+    }
+
+    .title p {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .visualizer-wrap {
+      width: min(1080px, 94vw);
+      height: clamp(260px, 42vh, 430px);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid var(--border);
+      box-shadow:
+        0 0 70px color-mix(in srgb, var(--accent) 18%, transparent),
+        inset 0 0 48px color-mix(in srgb, var(--accent) 8%, transparent);
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+    }
+
+    .visualizer-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 50% 0 auto 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 80%, transparent), transparent);
+      box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 90%, transparent);
+      opacity: var(--center-line-opacity, 0.9);
+      pointer-events: none;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .track-name {
+      min-height: 24px;
+      color: rgba(240, 252, 255, 0.92);
+      font-weight: 650;
+      text-align: center;
+      text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 70%, transparent);
+    }
+
+    .controls, .studio-panel {
+      width: min(1080px, 94vw);
+      border-radius: 22px;
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.16);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px;
+    }
+
+    .studio-panel {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    input[type="file"], input[type="text"], select {
+      width: 100%;
+      min-height: 40px;
+      color: rgba(245, 252, 255, 0.9);
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 12px;
+      padding: 9px 11px;
+      outline: none;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .range-value {
+      color: rgba(245, 252, 255, 0.86);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-weight: 760;
+      color: #03111d;
+      cursor: pointer;
+      background: linear-gradient(135deg, #ffffff, var(--accent) 48%, var(--accent-2));
+      box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 42%, transparent);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 34px color-mix(in srgb, var(--accent) 66%, transparent);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .ghost-btn {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: none;
+    }
+
+    .hint {
+      width: min(1080px, 94vw);
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    audio {
+      width: min(1080px, 94vw);
+      opacity: 0.86;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 900px) {
+      .controls, .studio-panel {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .app { padding: 18px; }
+      .controls, .studio-panel {
+        grid-template-columns: 1fr;
+      }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body class="theme-blue">
+  <div class="stars" id="stars"></div>
+  <div class="mesh" id="mesh"></div>
+  <div class="bg-orb" id="orb"></div>
+
+  <main class="app">
+    <section class="title" id="titleBlock">
+      <h1 id="mainTitle">Nightcore Visualizer</h1>
+      <p id="subtitle">Linear glow audio bars / browser only / free</p>
+    </section>
+
+    <section class="visualizer-wrap" id="visualizerWrap">
+      <canvas id="visualizer"></canvas>
+    </section>
+
+    <div class="track-name" id="trackName">音源を読み込んでください</div>
+
+    <section class="controls">
+      <input id="audioFile" type="file" accept="audio/*" />
+      <button id="playBtn" disabled>Play</button>
+      <button id="pauseBtn" disabled>Pause</button>
+      <button class="ghost-btn" id="fullscreenBtn">Fullscreen</button>
+      <button class="ghost-btn" id="exportBtn" disabled>Manual Export</button>
+      <button class="ghost-btn" id="autoExportBtn" disabled>Auto Export</button>
+      <button class="ghost-btn" id="autoTransparentBtn" disabled>Auto Transparent</button>
+    </section>
+
+    <section class="studio-panel">
+      <div class="field">
+        <label for="modeSelect">波形タイプ</label>
+        <select id="modeSelect">
+          <option value="bars">Linear Bars</option>
+          <option value="wave">Smooth Wave</option>
+          <option value="mirrorWave">Mirror Wave</option>
+          <option value="dots">Glowing Dots</option>
+          <option value="circle">Circle Ring</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="themeSelect">カラー</label>
+        <select id="themeSelect">
+          <option value="theme-blue">Blue Nightcore</option>
+          <option value="theme-pink">Pink Anime</option>
+          <option value="theme-orange">Orange Sunset</option>
+          <option value="theme-green">Mint Cyber</option>
+          <option value="theme-mono">White Mono</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="bgSelect">背景</label>
+        <select id="bgSelect">
+          <option value="full">Stars + Grid + Orb</option>
+          <option value="stars">Stars Only</option>
+          <option value="grid">Grid Only</option>
+          <option value="orb">Orb Only</option>
+          <option value="clean">Clean</option>
+          <option value="transparent">Transparent Export</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="titleInput">タイトル</label>
+        <input id="titleInput" type="text" value="Nightcore Visualizer" maxlength="42" />
+      </div>
+
+      <div class="field">
+        <label for="sensitivityRange">感度</label>
+        <input id="sensitivityRange" type="range" min="0.5" max="2.8" value="1.35" step="0.05" />
+        <div class="range-value" id="sensitivityValue">1.35</div>
+      </div>
+
+      <div class="field">
+        <label for="smoothRange">反応のなめらかさ</label>
+        <input id="smoothRange" type="range" min="0.35" max="0.95" value="0.82" step="0.01" />
+        <div class="range-value" id="smoothValue">0.82</div>
+      </div>
+
+      <div class="field">
+        <label for="barRange">線・点の数</label>
+        <input id="barRange" type="range" min="24" max="144" value="72" step="4" />
+        <div class="range-value" id="barValue">72</div>
+      </div>
+
+      <div class="field">
+        <label for="glowRange">グロー</label>
+        <input id="glowRange" type="range" min="0" max="48" value="24" step="1" />
+        <div class="range-value" id="glowValue">24</div>
+      </div>
+
+      <div class="field">
+        <label for="heightRange">反応の大きさ</label>
+        <input id="heightRange" type="range" min="0.25" max="1.2" value="0.82" step="0.01" />
+        <div class="range-value" id="heightValue">0.82</div>
+      </div>
+
+      <div class="field">
+        <label for="bassRange">低音ブースト</label>
+        <input id="bassRange" type="range" min="0" max="1.8" value="0.45" step="0.05" />
+        <div class="range-value" id="bassValue">0.45</div>
+      </div>
+
+      <div class="field">
+        <label for="titleToggle">タイトル表示</label>
+        <select id="titleToggle">
+          <option value="show">Show</option>
+          <option value="hide">Hide</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="presetSelect">プリセット</label>
+        <select id="presetSelect">
+          <option value="custom">Custom</option>
+          <option value="nightcore">Nightcore Classic</option>
+          <option value="kawaii">Kawaii Pop</option>
+          <option value="edm">EDM Punch</option>
+          <option value="minimal">Minimal Clean</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="controls" id="exportPanel">
+      <div class="field">
+        <label for="warmupRange">開始前ウォームアップ秒数</label>
+        <input id="warmupRange" type="range" min="0" max="10" value="3" step="1" />
+        <div class="range-value" id="warmupValue">3 sec</div>
+      </div>
+      <div class="field">
+        <label for="exportDuration">書き出し秒数</label>
+        <input id="exportDuration" type="text" value="30" />
+      </div>
+      <div class="field">
+        <label for="exportTransparent">書き出し背景</label>
+        <select id="exportTransparent">
+          <option value="normal">通常背景</option>
+          <option value="transparent">透過背景</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="exportQuality">書き出し画質</label>
+        <select id="exportQuality">
+          <option value="high">高画質 / 60fps / 16Mbps</option>
+          <option value="medium" selected>中画質 / 60fps / 8Mbps</option>
+          <option value="low">低画質 / 30fps / 4Mbps</option>
+        </select>
+      </div>
+      <button id="downloadBtn" disabled>Download</button>
+    </section>
+
+    <div class="track-name" id="statusText"></div>
+
+    <audio id="audio" controls></audio>
+
+    <p class="hint">
+      波形タイプ・感度・反応速度・色・背景を切り替えられます。録画時はFullscreenにして、Mac標準の画面収録を使うのがおすすめです。<br />
+      低音ブーストを上げると、キックに合わせて強く跳ねるナイトコア風になります。
+    </p>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("visualizer");
+    const ctx = canvas.getContext("2d");
+    const audio = document.getElementById("audio");
+    const audioFile = document.getElementById("audioFile");
+    const playBtn = document.getElementById("playBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const exportBtn = document.getElementById("exportBtn");
+    const autoExportBtn = document.getElementById("autoExportBtn");
+    const autoTransparentBtn = document.getElementById("autoTransparentBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const statusText = document.getElementById("statusText");
+    const trackName = document.getElementById("trackName");
+    const titleBlock = document.getElementById("titleBlock");
+    const mainTitle = document.getElementById("mainTitle");
+    const subtitle = document.getElementById("subtitle");
+    const stars = document.getElementById("stars");
+    const mesh = document.getElementById("mesh");
+    const orb = document.getElementById("orb");
+
+    const controls = {
+      mode: document.getElementById("modeSelect"),
+      theme: document.getElementById("themeSelect"),
+      bg: document.getElementById("bgSelect"),
+      title: document.getElementById("titleInput"),
+      sensitivity: document.getElementById("sensitivityRange"),
+      smooth: document.getElementById("smoothRange"),
+      bars: document.getElementById("barRange"),
+      glow: document.getElementById("glowRange"),
+      height: document.getElementById("heightRange"),
+      bass: document.getElementById("bassRange"),
+      titleToggle: document.getElementById("titleToggle"),
+      preset: document.getElementById("presetSelect"),
+      warmup: document.getElementById("warmupRange"),
+      exportDuration: document.getElementById("exportDuration"),
+      exportTransparent: document.getElementById("exportTransparent"),
+      exportQuality: document.getElementById("exportQuality")
+    };
+
+    const valueLabels = {
+      sensitivity: document.getElementById("sensitivityValue"),
+      smooth: document.getElementById("smoothValue"),
+      bars: document.getElementById("barValue"),
+      glow: document.getElementById("glowValue"),
+      height: document.getElementById("heightValue"),
+      bass: document.getElementById("bassValue"),
+      warmup: document.getElementById("warmupValue")
+    };
+
+    let audioContext;
+    let analyser;
+    let source;
+    let frequencyData;
+    let timeData;
+    let bufferLength;
+    let initialized = false;
+    let animationId;
+    let idleAnimationId;
+    let mediaRecorder;
+    let recordedChunks = [];
+    let exportedBlobUrl = null;
+    let exportMode = false;
+    let forceTransparent = false;
+    let audioDestination;
+    let autoDownloadAfterExport = false;
+
+    function getCss(name) {
+      return getComputedStyle(document.body).getPropertyValue(name).trim();
+    }
+
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function initAudio() {
+      if (initialized) return;
+
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = Number(controls.smooth.value);
+
+      source = audioContext.createMediaElementSource(audio);
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+      audioDestination = audioContext.createMediaStreamDestination();
+      analyser.connect(audioDestination);
+
+      bufferLength = analyser.frequencyBinCount;
+      frequencyData = new Uint8Array(bufferLength);
+      timeData = new Uint8Array(bufferLength);
+      initialized = true;
+    }
+
+    function refreshLabels() {
+      valueLabels.sensitivity.textContent = Number(controls.sensitivity.value).toFixed(2);
+      valueLabels.smooth.textContent = Number(controls.smooth.value).toFixed(2);
+      valueLabels.bars.textContent = controls.bars.value;
+      valueLabels.glow.textContent = controls.glow.value;
+      valueLabels.height.textContent = Number(controls.height.value).toFixed(2);
+      valueLabels.bass.textContent = Number(controls.bass.value).toFixed(2);
+      valueLabels.warmup.textContent = `${controls.warmup.value} sec`;
+    }
+
+    function applyBackground() {
+      const value = controls.bg.value;
+      const transparent = value === "transparent" || forceTransparent;
+      stars.classList.toggle("hidden", transparent || !(value === "full" || value === "stars"));
+      mesh.classList.toggle("hidden", transparent || !(value === "full" || value === "grid"));
+      orb.classList.toggle("hidden", transparent || !(value === "full" || value === "orb"));
+      document.body.style.background = transparent ? "transparent" : "";
+      document.getElementById("visualizerWrap").style.background = transparent ? "transparent" : "rgba(255, 255, 255, 0.045)";
+      document.getElementById("visualizerWrap").style.borderColor = transparent ? "transparent" : "var(--border)";
+      document.getElementById("visualizerWrap").style.boxShadow = transparent ? "none" : "";
+      document.getElementById("visualizerWrap").style.setProperty("--center-line-opacity", transparent ? "0" : "0.9");
+    }
+
+    function applyTheme() {
+      document.body.className = controls.theme.value;
+    }
+
+    function applyTitle() {
+      mainTitle.textContent = controls.title.value || "Nightcore Visualizer";
+      titleBlock.classList.toggle("hidden", controls.titleToggle.value === "hide");
+    }
+
+    function applyAnalyserSettings() {
+      if (analyser) {
+        analyser.smoothingTimeConstant = Number(controls.smooth.value);
+      }
+    }
+
+    function applyPreset(name) {
+      const presets = {
+        nightcore: {
+          mode: "bars", theme: "theme-blue", bg: "full", sensitivity: 1.45, smooth: 0.8, bars: 80, glow: 28, height: 0.88, bass: 0.55, title: "Nightcore Visualizer"
+        },
+        kawaii: {
+          mode: "dots", theme: "theme-pink", bg: "stars", sensitivity: 1.6, smooth: 0.86, bars: 96, glow: 32, height: 0.76, bass: 0.35, title: "Kawaii Pop Visualizer"
+        },
+        edm: {
+          mode: "mirrorWave", theme: "theme-orange", bg: "grid", sensitivity: 1.9, smooth: 0.62, bars: 112, glow: 38, height: 1.03, bass: 1.25, title: "EDM Punch Visualizer"
+        },
+        minimal: {
+          mode: "wave", theme: "theme-mono", bg: "clean", sensitivity: 1.1, smooth: 0.9, bars: 56, glow: 8, height: 0.55, bass: 0.1, title: "Minimal Visualizer"
+        }
+      };
+
+      const preset = presets[name];
+      if (!preset) return;
+
+      controls.mode.value = preset.mode;
+      controls.theme.value = preset.theme;
+      controls.bg.value = preset.bg;
+      controls.sensitivity.value = preset.sensitivity;
+      controls.smooth.value = preset.smooth;
+      controls.bars.value = preset.bars;
+      controls.glow.value = preset.glow;
+      controls.height.value = preset.height;
+      controls.bass.value = preset.bass;
+      controls.title.value = preset.title;
+      controls.titleToggle.value = "show";
+      applyAll(false);
+    }
+
+    function applyAll(markCustom = true) {
+      if (markCustom) controls.preset.value = "custom";
+      refreshLabels();
+      applyTheme();
+      applyBackground();
+      applyTitle();
+      applyAnalyserSettings();
+    }
+
+    Object.values(controls).forEach((control) => {
+      control.addEventListener("input", () => applyAll(true));
+      control.addEventListener("change", () => applyAll(true));
+    });
+
+    controls.preset.addEventListener("change", (event) => {
+      applyPreset(event.target.value);
+    });
+
+    audioFile.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const url = URL.createObjectURL(file);
+      audio.src = url;
+      trackName.textContent = file.name;
+      playBtn.disabled = false;
+      pauseBtn.disabled = false;
+      exportBtn.disabled = false;
+      autoExportBtn.disabled = false;
+      autoTransparentBtn.disabled = false;
+    });
+
+    playBtn.addEventListener("click", async () => {
+      await warmupThenPlay(false);
+    });
+
+    pauseBtn.addEventListener("click", () => {
+      audio.pause();
+    });
+
+    audio.addEventListener("play", () => {
+      initAudio();
+      startDraw();
+    });
+
+    async function warmupThenPlay(forExport = false) {
+      initAudio();
+      if (audioContext.state === "suspended") await audioContext.resume();
+
+      if (idleAnimationId) cancelAnimationFrame(idleAnimationId);
+      startDraw();
+
+      const warmupSeconds = Number(controls.warmup.value);
+      if (warmupSeconds > 0) {
+        const originalTime = audio.currentTime;
+        const originalMuted = audio.muted;
+        const originalVolume = audio.volume;
+
+        statusText.textContent = `Loading / warmup: ${warmupSeconds}秒`;
+
+        // ウォームアップ中は音だけミュートする。
+        // volume=0にはしないため、AudioContext / Analyser には信号が入り、波形は動く。
+        audio.muted = true;
+        if (audio.volume === 0) audio.volume = originalVolume > 0 ? originalVolume : 1;
+
+        await audio.play();
+        await wait(warmupSeconds * 1000);
+        audio.pause();
+        audio.currentTime = forExport ? 0 : originalTime;
+
+        // 本番前に元の状態へ戻す。
+        audio.muted = originalMuted;
+        audio.volume = originalVolume > 0 ? originalVolume : 1;
+        await wait(300);
+      }
+
+      statusText.textContent = forExport ? "Export recording..." : "Ready";
+      audio.muted = false;
+      if (audio.volume === 0) audio.volume = 1;
+      await audio.play();
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    fullscreenBtn.addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+      setTimeout(resizeCanvas, 150);
+    });
+
+    function roundedRect(x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function normalizeValue(raw, index) {
+      const sensitivity = Number(controls.sensitivity.value);
+      const bassBoost = Number(controls.bass.value);
+      const bassFactor = index < bufferLength * 0.18 ? 1 + bassBoost : 1;
+      const value = Math.min(1, (raw / 255) * bassFactor);
+      return Math.pow(value, Math.max(0.35, 2.1 - sensitivity));
+    }
+
+    function makeGradient(y1, y2) {
+      const accent = getCss("--accent");
+      const accent2 = getCss("--accent-2");
+      const gradient = ctx.createLinearGradient(0, y1, 0, y2);
+      gradient.addColorStop(0, "rgba(255,255,255,0.95)");
+      gradient.addColorStop(0.48, accent);
+      gradient.addColorStop(1, accent2);
+      return gradient;
+    }
+
+    function drawBars(width, height, centerY) {
+      const bars = Number(controls.bars.value);
+      const gap = Math.max(2, 360 / bars);
+      const totalGap = gap * (bars - 1);
+      const barWidth = Math.max(2, (width * 0.86 - totalGap) / bars);
+      const startX = width * 0.07;
+      const heightScale = Number(controls.height.value);
+
+      for (let i = 0; i < bars; i++) {
+        const dataIndex = Math.floor(i * bufferLength / bars);
+        const value = normalizeValue(frequencyData[dataIndex], dataIndex);
+        const barHeight = Math.max(4, value * height * heightScale);
+        const x = startX + i * (barWidth + gap);
+        const yTop = centerY - barHeight / 2;
+
+        ctx.fillStyle = makeGradient(yTop, yTop + barHeight);
+        roundedRect(x, yTop, barWidth, barHeight, barWidth / 2);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.42)";
+        roundedRect(x, yTop, barWidth, Math.min(8, barHeight * 0.16), barWidth / 2);
+        ctx.fill();
+      }
+    }
+
+    function drawWave(width, height, centerY, mirrored = false) {
+      const points = Number(controls.bars.value);
+      const heightScale = Number(controls.height.value);
+      ctx.beginPath();
+
+      for (let i = 0; i < points; i++) {
+        const dataIndex = Math.floor(i * bufferLength / points);
+        const normalized = (timeData[dataIndex] - 128) / 128;
+        const bass = normalizeValue(frequencyData[dataIndex], dataIndex);
+        const x = (i / (points - 1)) * width;
+        const y = centerY + normalized * height * 0.34 * heightScale + (bass - 0.5) * 36;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+
+      ctx.strokeStyle = makeGradient(centerY - 150, centerY + 150);
+      ctx.lineWidth = mirrored ? 3 : 4;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.stroke();
+
+      if (mirrored) {
+        ctx.beginPath();
+        for (let i = 0; i < points; i++) {
+          const dataIndex = Math.floor(i * bufferLength / points);
+          const normalized = (timeData[dataIndex] - 128) / 128;
+          const bass = normalizeValue(frequencyData[dataIndex], dataIndex);
+          const x = (i / (points - 1)) * width;
+          const y = centerY - normalized * height * 0.34 * heightScale - (bass - 0.5) * 36;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    function drawDots(width, height, centerY) {
+      const dots = Number(controls.bars.value);
+      const heightScale = Number(controls.height.value);
+      const accent = getCss("--accent");
+
+      for (let i = 0; i < dots; i++) {
+        const dataIndex = Math.floor(i * bufferLength / dots);
+        const value = normalizeValue(frequencyData[dataIndex], dataIndex);
+        const x = width * 0.06 + (i / (dots - 1)) * width * 0.88;
+        const y = centerY + Math.sin(i * 0.35 + performance.now() / 450) * 18 - value * height * 0.28 * heightScale;
+        const radius = 2 + value * 11;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = i % 2 === 0 ? accent : "rgba(255,255,255,0.9)";
+        ctx.fill();
+      }
+    }
+
+    function drawCircle(width, height, centerY) {
+      const bars = Number(controls.bars.value);
+      const heightScale = Number(controls.height.value);
+      const radius = Math.min(width, height) * 0.22;
+      const maxBar = Math.min(width, height) * 0.24 * heightScale;
+      const cx = width / 2;
+      const cy = centerY;
+
+      for (let i = 0; i < bars; i++) {
+        const dataIndex = Math.floor(i * bufferLength / bars);
+        const value = normalizeValue(frequencyData[dataIndex], dataIndex);
+        const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
+        const inner = radius;
+        const outer = radius + value * maxBar + 4;
+        const x1 = cx + Math.cos(angle) * inner;
+        const y1 = cy + Math.sin(angle) * inner;
+        const x2 = cx + Math.cos(angle) * outer;
+        const y2 = cy + Math.sin(angle) * outer;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = makeGradient(y1, y2);
+        ctx.lineWidth = Math.max(2, Math.min(8, 520 / bars));
+        ctx.lineCap = "round";
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 0.82, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function drawPulse(width, height, centerY) {
+      const avg = frequencyData.reduce((sum, n) => sum + n, 0) / frequencyData.length;
+      const pulse = avg / 255;
+      const accent = getCss("--accent");
+
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(width / 2, centerY, 70 + pulse * 95, 0, Math.PI * 2);
+      ctx.strokeStyle = accent;
+      ctx.globalAlpha = 0.08 + pulse * 0.25;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    function drawFrame() {
+      animationId = requestAnimationFrame(drawFrame);
+      if (!analyser) return;
+
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      const centerY = height / 2;
+
+      analyser.getByteFrequencyData(frequencyData);
+      analyser.getByteTimeDomainData(timeData);
+
+      ctx.clearRect(0, 0, width, height);
+
+      if (!(forceTransparent || controls.bg.value === "transparent")) {
+        const gradientBg = ctx.createLinearGradient(0, 0, width, 0);
+        gradientBg.addColorStop(0, "rgba(255,255,255,0)");
+        gradientBg.addColorStop(0.5, "rgba(255,255,255,0.075)");
+        gradientBg.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = gradientBg;
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      ctx.shadowBlur = Number(controls.glow.value);
+      ctx.shadowColor = getCss("--accent");
+
+      const mode = controls.mode.value;
+      if (mode === "bars") drawBars(width, height, centerY);
+      if (mode === "wave") drawWave(width, height, centerY, false);
+      if (mode === "mirrorWave") drawWave(width, height, centerY, true);
+      if (mode === "dots") drawDots(width, height, centerY);
+      if (mode === "circle") drawCircle(width, height, centerY);
+
+      drawPulse(width, height, centerY);
+    }
+
+    function startDraw() {
+      if (animationId) cancelAnimationFrame(animationId);
+      drawFrame();
+    }
+
+    function idleDraw() {
+      if (initialized) return;
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      const centerY = height / 2;
+      const now = performance.now() / 500;
+      const bars = Number(controls.bars.value);
+      const gap = Math.max(2, 360 / bars);
+      const totalGap = gap * (bars - 1);
+      const barWidth = Math.max(2, (width * 0.86 - totalGap) / bars);
+      const startX = width * 0.07;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.shadowBlur = Number(controls.glow.value) * 0.75;
+      ctx.shadowColor = getCss("--accent");
+
+      for (let i = 0; i < bars; i++) {
+        const wave = Math.sin(now + i * 0.28) * 0.5 + 0.5;
+        const barHeight = 10 + wave * 44;
+        const x = startX + i * (barWidth + gap);
+        const yTop = centerY - barHeight / 2;
+        ctx.fillStyle = getCss("--accent");
+        ctx.globalAlpha = 0.35 + wave * 0.25;
+        roundedRect(x, yTop, barWidth, barHeight, barWidth / 2);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
+      idleAnimationId = requestAnimationFrame(idleDraw);
+    }
+
+    exportBtn.addEventListener("click", async () => {
+      if (!audio.src) return;
+      autoDownloadAfterExport = false;
+      await exportWebm();
+    });
+
+    autoExportBtn.addEventListener("click", async () => {
+      if (!audio.src) return;
+      await autoExport(false);
+    });
+
+    autoTransparentBtn.addEventListener("click", async () => {
+      if (!audio.src) return;
+      await autoExport(true);
+    });
+
+    async function autoExport(transparent = false) {
+      statusText.textContent = "Auto export preparing...";
+
+      // 見た目の設定は画面上の現在値をそのまま使う。
+      // 自動化するのは、背景透過指定・ウォームアップ・曲の長さ取得・自動ダウンロードだけ。
+      controls.exportTransparent.value = transparent ? "transparent" : "normal";
+      forceTransparent = transparent;
+      controls.warmup.value = "5";
+
+      if (audio.duration && Number.isFinite(audio.duration)) {
+        controls.exportDuration.value = String(Math.ceil(audio.duration));
+      } else {
+        controls.exportDuration.value = "30";
+      }
+
+      autoDownloadAfterExport = true;
+      applyAll(false);
+      await wait(300);
+      await exportWebm();
+    }
+
+    async function exportWebm() {
+      initAudio();
+      if (audioContext.state === "suspended") await audioContext.resume();
+
+      recordedChunks = [];
+      downloadBtn.disabled = true;
+      if (exportedBlobUrl) URL.revokeObjectURL(exportedBlobUrl);
+
+      forceTransparent = controls.exportTransparent.value === "transparent";
+      applyBackground();
+      exportMode = true;
+      audio.pause();
+      audio.currentTime = 0;
+      await wait(250);
+
+      const qualityPresets = {
+        high: { fps: 60, bitrate: 16000000 },
+        medium: { fps: 60, bitrate: 8000000 },
+        low: { fps: 30, bitrate: 4000000 }
+      };
+      const selectedQuality = qualityPresets[controls.exportQuality.value] || qualityPresets.medium;
+      const canvasStream = canvas.captureStream(selectedQuality.fps);
+      const mixedStream = new MediaStream();
+      canvasStream.getVideoTracks().forEach(track => mixedStream.addTrack(track));
+      if (audioDestination) {
+        audioDestination.stream.getAudioTracks().forEach(track => mixedStream.addTrack(track));
+      }
+
+      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+        ? "video/webm;codecs=vp9,opus"
+        : "video/webm";
+
+      mediaRecorder = new MediaRecorder(mixedStream, { mimeType, videoBitsPerSecond: selectedQuality.bitrate });
+      mediaRecorder.ondataavailable = event => {
+        if (event.data && event.data.size > 0) recordedChunks.push(event.data);
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: mimeType });
+        exportedBlobUrl = URL.createObjectURL(blob);
+        downloadBtn.disabled = false;
+        statusText.textContent = autoDownloadAfterExport ? "Export complete. Downloading..." : "Export complete. Downloadを押してください。";
+        forceTransparent = false;
+        exportMode = false;
+        applyBackground();
+        if (autoDownloadAfterExport) {
+          setTimeout(() => {
+            downloadBtn.click();
+            autoDownloadAfterExport = false;
+            statusText.textContent = `Auto export complete. Quality: ${controls.exportQuality.options[controls.exportQuality.selectedIndex].text}`;
+          }, 300);
+        }
+      };
+
+      mediaRecorder.start();
+      await warmupThenPlay(true);
+
+      // 念のため、書き出し開始直後にも音声とAnalyserを復帰させる。
+      audio.muted = false;
+      if (audio.volume === 0) audio.volume = 1;
+      if (audioContext.state === "suspended") await audioContext.resume();
+
+      const durationSeconds = Math.max(1, Number(controls.exportDuration.value) || 30);
+      await wait(durationSeconds * 1000);
+      audio.pause();
+      if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+    }
+
+    downloadBtn.addEventListener("click", () => {
+      if (!exportedBlobUrl) return;
+      const a = document.createElement("a");
+      a.href = exportedBlobUrl;
+      a.download = controls.exportTransparent.value === "transparent"
+        ? "visualizer-transparent.webm"
+        : "visualizer.webm";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+
+    applyAll(false);
+    idleDraw();
+  </script>
+</body>
+</html>
